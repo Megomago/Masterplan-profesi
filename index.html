@@ -495,19 +495,8 @@ section:nth-child(7){animation-delay:.35s}section:nth-child(8){animation-delay:.
   <div class="sh"><span class="sn">05</span><h2 class="st">Roadmap Pengembangan</h2></div>
 
   <div class="card" style="margin-bottom: 40px; padding: 20px 24px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+    <div style="margin-bottom:16px;">
       <p class="card-label" style="margin-bottom:0;">Gantt Chart Berbasis Kalender</p>
-      <button id="btnToggleGanttEditor" class="no-print" style="background:var(--paper2); color:var(--ink); border:1px solid var(--rule); border-radius:4px; padding:6px 12px; font-family:var(--mono); font-size:10px; font-weight:500; cursor:pointer; transition:background .2s;">⚙️ ATUR JADWAL</button>
-    </div>
-
-    <div id="ganttEditor" class="no-print" style="display:none; background:var(--paper); border:1px solid var(--rule); border-radius:6px; padding:16px; margin-bottom:20px;">
-       <p style="font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink3); margin-bottom:12px;">Editor Jadwal (Format YYYY-MM-DD)</p>
-       <div id="ganttEditorList" style="display:flex; flex-direction:column; gap:8px;"></div>
-       <button id="btnAddGanttTask" style="margin-top:12px; background:var(--paper2); color:var(--ink); border:1px dashed var(--rule); border-radius:4px; padding:8px; font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:0.05em; width:100%; cursor:pointer; transition:background .2s;">+ TAMBAH JADWAL BARU</button>
-       <div style="margin-top:16px; display:flex; gap:8px;">
-         <button id="btnSaveGantt" style="background:var(--accent); color:white; border:none; border-radius:4px; padding:8px 16px; font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:0.05em; cursor:pointer;">SIMPAN & TERAPKAN</button>
-         <button id="btnResetGantt" style="background:transparent; color:var(--ink3); border:1px solid var(--rule); border-radius:4px; padding:8px 12px; font-family:var(--mono); font-size:10px; cursor:pointer;">RESET DEFAULT</button>
-       </div>
     </div>
 
     <div class="gantt-container">
@@ -755,176 +744,65 @@ section:nth-child(7){animation-delay:.35s}section:nth-child(8){animation-delay:.
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const defaultTasks = [
-    { id: 't1', group: '1. Hard Skill', name: 'Menguasai Spreadsheet', start: '2024-06-01', end: '2025-05-31', color: '' },
-    { id: 't2', group: '1. Hard Skill', name: 'Unity & C# Scripting', start: '2024-06-01', end: '2026-05-31', color: '' },
-    { id: 't3', group: '2. Experience', name: 'Ikut Global Game Jam', start: '2024-06-01', end: '2026-05-31', color: 'bg-green' },
-    { id: 't4', group: '3. Portofolio', name: 'Reverse Design Doc', start: '2024-06-01', end: '2027-05-31', color: 'bg-amber' },
-    { id: 't5', group: '4. Networking', name: 'Ekosistem IGDX', start: '2024-06-01', end: '2027-05-31', color: 'bg-ink' }
+  const tasks = [
+    { group: 'Hard Skill', name: 'Menguasi Hard Surface Modeling', start: '2023-07-20', end: '2030-01-01', color: '' },
+    { group: 'Hard Skill', name: 'Unity & C# Scripting', start: '2023-10-01', end: '2030-01-01', color: '' },
+    { group: 'Experience', name: 'Ikut Organisasi diluar gamedev un', start: '2026-06-11', end: '2026-08-20', color: 'bg-green' },
+    { group: 'Portofolio', name: 'Projek pertama', start: '2026-06-30', end: '2030-01-01', color: 'bg-amber' },
+    { group: 'Portofolio', name: 'Target rilis beta', start: '2028-10-26', end: '2030-01-01', color: 'bg-ink' }
   ];
-
-  let tasks = JSON.parse(localStorage.getItem('ganttTasksCal')) || [...defaultTasks];
 
   const thead = document.getElementById('ganttHead');
   const tbody = document.getElementById('ganttBody');
-  const editorList = document.getElementById('ganttEditorList');
-  const btnToggle = document.getElementById('btnToggleGanttEditor');
-  const btnAdd = document.getElementById('btnAddGanttTask');
-  const editor = document.getElementById('ganttEditor');
-  const btnSave = document.getElementById('btnSaveGantt');
-  const btnReset = document.getElementById('btnResetGantt');
 
-  function renderGantt() {
-    if (tasks.length === 0) {
-      thead.innerHTML = '<tr><th>Target & Eksekusi</th></tr>';
-      tbody.innerHTML = '<tr><td style="text-align:center; padding:20px; font-size:13px; color:var(--ink3);">Belum ada jadwal</td></tr>';
-      return;
-    }
+  let minDate = new Date(tasks[0].start);
+  let maxDate = new Date(tasks[0].end);
+  tasks.forEach(t => {
+    const s = new Date(t.start);
+    const e = new Date(t.end);
+    if (s < minDate) minDate = s;
+    if (e > maxDate) maxDate = e;
+  });
 
-    let minDate = new Date(tasks[0].start);
-    let maxDate = new Date(tasks[0].end);
+  const startYear = minDate.getFullYear();
+  const endYear = maxDate.getFullYear();
+  const totalYears = endYear - startYear + 1;
 
-    tasks.forEach(t => {
-      const s = new Date(t.start);
-      const e = new Date(t.end);
-      if (s < minDate) minDate = s;
-      if (e > maxDate) maxDate = e;
-    });
-
-    const startYear = minDate.getFullYear();
-    const endYear = maxDate.getFullYear();
-    const totalYears = endYear - startYear + 1;
-
-    let theadHTML = '<tr><th class="gt-task">Target & Eksekusi</th>';
-    for (let y = startYear; y <= endYear; y++) {
-      theadHTML += `<th>${y}</th>`;
-    }
-    theadHTML += '</tr>';
-    thead.innerHTML = theadHTML;
-
-    const globalStart = new Date(`${startYear}-01-01`).getTime();
-    const globalEnd = new Date(`${endYear}-12-31`).getTime();
-    const globalDuration = globalEnd - globalStart;
-
-    tbody.innerHTML = '';
-    tasks.forEach(t => {
-      const sTime = new Date(t.start).getTime();
-      const eTime = new Date(t.end).getTime();
-      
-      const left = ((sTime - globalStart) / globalDuration) * 100;
-      const width = ((eTime - sTime) / globalDuration) * 100;
-      
-      const sDateStr = new Date(t.start).toLocaleDateString('id-ID', {month:'short', year:'numeric'});
-      const eDateStr = new Date(t.end).toLocaleDateString('id-ID', {month:'short', year:'numeric'});
-      
-      let gridHTML = '<div class="gt-grid">';
-      for(let i=0; i<totalYears; i++) gridHTML += '<div class="gt-line"></div>';
-      gridHTML += '</div>';
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="gt-task-name">${t.group}<br><span style="font-size:11px;color:var(--ink3);font-weight:400;font-family:var(--mono)">${t.name}</span></td>
-        <td colspan="${totalYears}">
-          <div class="gt-timeline">
-            ${gridHTML}
-            <div class="gt-bar ${t.color}" style="left:${left}%; width:${width}%;">${sDateStr} - ${eDateStr}</div>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+  let theadHTML = '<tr><th class="gt-task">Target & Eksekusi</th>';
+  for (let y = startYear; y <= endYear; y++) {
+    theadHTML += `<th>${y}</th>`;
   }
+  theadHTML += '</tr>';
+  thead.innerHTML = theadHTML;
 
-  function renderEditor() {
-    editorList.innerHTML = '';
-    if(tasks.length === 0) {
-      editorList.innerHTML = '<p style="font-size:12px; color:var(--ink3); text-align:center;">Tidak ada jadwal. Silakan tambah baru.</p>';
-      return;
-    }
-    tasks.forEach((t, i) => {
-      const row = document.createElement('div');
-      row.style.display = 'grid';
-      row.style.gridTemplateColumns = 'minmax(80px, 1.5fr) minmax(100px, 2fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(70px, auto) auto';
-      row.style.gap = '8px';
-      row.style.alignItems = 'center';
-      row.style.fontSize = '12px';
-      
-      row.innerHTML = `
-        <input type="text" id="g_${i}" value="${t.group}" placeholder="Kategori" style="padding:6px; border:1px solid var(--rule); border-radius:4px; font-family:var(--sans);">
-        <input type="text" id="n_${i}" value="${t.name}" placeholder="Nama Jadwal" style="padding:6px; border:1px solid var(--rule); border-radius:4px; font-family:var(--sans);">
-        <input type="date" id="s_${i}" value="${t.start}" style="padding:4px; border:1px solid var(--rule); border-radius:4px; font-family:var(--mono); font-size:11px;">
-        <input type="date" id="e_${i}" value="${t.end}" style="padding:4px; border:1px solid var(--rule); border-radius:4px; font-family:var(--mono); font-size:11px;">
-        <select id="c_${i}" style="padding:4px; border:1px solid var(--rule); border-radius:4px; font-family:var(--mono); font-size:11px;">
-          <option value="" ${t.color === '' ? 'selected' : ''}>Biru</option>
-          <option value="bg-green" ${t.color === 'bg-green' ? 'selected' : ''}>Hijau</option>
-          <option value="bg-amber" ${t.color === 'bg-amber' ? 'selected' : ''}>Kuning</option>
-          <option value="bg-ink" ${t.color === 'bg-ink' ? 'selected' : ''}>Gelap</option>
-        </select>
-        <button onclick="document.getElementById('del_${i}').click()" title="Hapus" style="background:var(--red-bg); color:var(--red); border:none; border-radius:4px; padding:6px 10px; cursor:pointer;">🗑️</button>
-        <button id="del_${i}" style="display:none;"></button>
-      `;
-      editorList.appendChild(row);
-      
-      document.getElementById(`del_${i}`).addEventListener('click', () => {
-        // Collect current state before deleting so we don't lose typed data
-        saveCurrentState();
-        tasks.splice(i, 1);
-        renderEditor();
-      });
-    });
-  }
+  const globalStart = new Date(`${startYear}-01-01`).getTime();
+  const globalEnd = new Date(`${endYear}-12-31`).getTime();
+  const globalDuration = globalEnd - globalStart;
 
-  function saveCurrentState() {
-    const newTasks = [];
-    for(let i=0; i<tasks.length; i++) {
-      if(!document.getElementById('n_' + i)) continue;
-      newTasks.push({
-        id: tasks[i].id,
-        group: document.getElementById('g_' + i).value,
-        name: document.getElementById('n_' + i).value,
-        start: document.getElementById('s_' + i).value,
-        end: document.getElementById('e_' + i).value,
-        color: document.getElementById('c_' + i).value
-      });
-    }
-    tasks = newTasks;
-  }
+  tasks.forEach(t => {
+    const sTime = new Date(t.start).getTime();
+    const eTime = new Date(t.end).getTime();
+    const left = ((sTime - globalStart) / globalDuration) * 100;
+    const width = ((eTime - sTime) / globalDuration) * 100;
+    const sDateStr = new Date(t.start).toLocaleDateString('id-ID', {month:'short', year:'numeric'});
+    const eDateStr = new Date(t.end).toLocaleDateString('id-ID', {month:'short', year:'numeric'});
 
-  btnToggle.addEventListener('click', () => {
-    if(editor.style.display === 'none') {
-      editor.style.display = 'block';
-      renderEditor();
-    } else {
-      editor.style.display = 'none';
-    }
+    let gridHTML = '<div class="gt-grid">';
+    for(let i=0; i<totalYears; i++) gridHTML += '<div class="gt-line"></div>';
+    gridHTML += '</div>';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="gt-task-name">${t.group}<br><span style="font-size:11px;color:var(--ink3);font-weight:400;font-family:var(--mono)">${t.name}</span></td>
+      <td colspan="${totalYears}">
+        <div class="gt-timeline">
+          ${gridHTML}
+          <div class="gt-bar ${t.color}" style="left:${left}%; width:${width}%;">${sDateStr} - ${eDateStr}</div>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
   });
-  
-  btnAdd.addEventListener('click', () => {
-    saveCurrentState();
-    const d = new Date();
-    const today = d.toISOString().split('T')[0];
-    d.setFullYear(d.getFullYear() + 1);
-    const nextYear = d.toISOString().split('T')[0];
-    
-    tasks.push({ id: 't'+Date.now(), group: 'Kategori', name: 'Jadwal Baru', start: today, end: nextYear, color: '' });
-    renderEditor();
-  });
-
-  btnSave.addEventListener('click', () => {
-    saveCurrentState();
-    localStorage.setItem('ganttTasksCal', JSON.stringify(tasks));
-    renderGantt();
-    editor.style.display = 'none';
-  });
-
-  btnReset.addEventListener('click', () => {
-    tasks = JSON.parse(JSON.stringify(defaultTasks));
-    localStorage.removeItem('ganttTasksCal');
-    renderEditor();
-    renderGantt();
-  });
-
-  renderGantt();
 });
 </script>
 </body>
